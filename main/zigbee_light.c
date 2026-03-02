@@ -253,6 +253,18 @@ static void zb_stack_init(void)
     esp_zb_cluster_list_t *cluster_list =
         esp_zb_color_dimmable_light_clusters_create(&light_cfg);
 
+    /* ---- Add ManufacturerName + ModelIdentifier to Basic cluster ----
+     * ZCL character strings are length-prefixed (first byte = length).
+     * Z2M reads these during interview to look up the device converter. */
+    static char manufacturer[] = {9, 'E', 's', 'p', 'r', 'e', 's', 's', 'i', 'f'};
+    static char model_id[]     = {11, 'n', 'i', 'g', 'h', 't', '-', 'l', 'i', 'g', 'h', 't'};
+    esp_zb_attribute_list_t *basic_cluster = esp_zb_cluster_list_get_cluster(
+        cluster_list, ESP_ZB_ZCL_CLUSTER_ID_BASIC, ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
+    esp_zb_basic_cluster_add_attr(basic_cluster,
+        ESP_ZB_ZCL_ATTR_BASIC_MANUFACTURER_NAME_ID, manufacturer);
+    esp_zb_basic_cluster_add_attr(basic_cluster,
+        ESP_ZB_ZCL_ATTR_BASIC_MODEL_IDENTIFIER_ID, model_id);
+
     /* ---- Endpoint config ---- */
     esp_zb_endpoint_config_t ep_cfg = {
         .endpoint        = HA_ENDPOINT,
@@ -278,5 +290,5 @@ void zigbee_task(void *arg)
     zb_stack_init();
 
     ESP_ERROR_CHECK(esp_zb_start(false));
-    esp_zb_stack_main_loop_iteration(); /* never returns */
+    esp_zb_stack_main_loop(); /* never returns */
 }
