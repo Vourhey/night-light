@@ -1,0 +1,33 @@
+# Zigbee
+CONFIG_ZB_ENABLED=y
+CONFIG_ZB_ZED=y
+
+# Flash size — partitions require ~2.6 MB, so 4 MB minimum
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="4MB"
+
+# Partition table
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# IEEE 802.15.4
+CONFIG_IEEE802154_ENABLED=y
+
+# mbedTLS — required by Zigbee security
+CONFIG_MBEDTLS_CMAC_C=y
+CONFIG_MBEDTLS_KEY_EXCHANGE_ECJPAKE=y
+
+# Disable hardware acceleration (not available / causes issues on C6 with Zigbee)
+CONFIG_MBEDTLS_HARDWARE_AES=n
+CONFIG_MBEDTLS_HARDWARE_MPI=n
+CONFIG_MBEDTLS_HARDWARE_SHA=n
+
+# Power management (enables light sleep between Zigbee polls)
+CONFIG_PM_ENABLE=y
+CONFIG_FREERTOS_USE_TICKLESS_IDLE=y
+
+# FreeRTOS
+CONFIG_FREERTOS_HZ=1000
+
+# Log level
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
