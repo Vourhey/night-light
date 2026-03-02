@@ -5,7 +5,7 @@ ESP32-C6 Zigbee end device firmware that controls a WS2812B LED strip. Appears i
 ## Hardware
 
 | Component | Detail |
-|-----------|--------|
+| --------- | ------ |
 | MCU | ESP32-C6 |
 | LED strip | WS2812B, 30 LEDs |
 | Data pin | GPIO 8 |

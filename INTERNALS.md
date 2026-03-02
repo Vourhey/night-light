@@ -21,7 +21,7 @@ Target audience: firmware engineers working on or maintaining this codebase.
 
 ## File Map
 
-```
+```text
 main/
 ├── main.c               Entry point. Boots NVS, inits LED, spawns Zigbee task.
 ├── led_strip_control.h  Public LED API + night_light_state_t type definition.
@@ -34,7 +34,7 @@ main/
 
 ## Boot Sequence
 
-```
+```text
 app_main()                          [main.c]
 │
 ├── nvs_flash_init()
@@ -78,7 +78,7 @@ app_main()                          [main.c]
 
 Two FreeRTOS tasks run concurrently after boot:
 
-```
+```text
 ┌─────────────────────────────────┐     ┌─────────────────────────────────┐
 │       zigbee_task (core 0)      │     │        led_task (any core)      │
 │                                 │     │                                 │
@@ -102,7 +102,7 @@ Two FreeRTOS tasks run concurrently after boot:
 **Shared resources:**
 
 | Resource | Type | Purpose |
-|----------|------|---------|
+| -------- | ---- | ------- |
 | `s_state` | `night_light_state_t` | Current on/off + color state |
 | `s_mutex` | `SemaphoreHandle_t` | Guards `s_state` against concurrent access |
 | `s_events` | `EventGroupHandle_t` | `LED_UPDATE_BIT` (bit 0) signals the LED task |
@@ -116,6 +116,7 @@ The LED task is purely reactive — it does zero work until signalled. This mean
 ### `led_strip_control_init()` — `led_strip_control.c:85`
 
 Called once from `app_main`. Sets up:
+
 - FreeRTOS mutex and event group
 - RMT peripheral via `led_strip_new_rmt_device()` (10 MHz clock, 64 symbols/block, no DMA)
 - Clears strip to all-off
@@ -133,6 +134,7 @@ The only public write path for LED state. Safe to call from any task.
 ### `led_task()` — `led_strip_control.c:54`
 
 Infinite loop:
+
 1. Blocks on `LED_UPDATE_BIT` (clears bit on wake)
 2. Copies `s_state` under mutex
 3. If `state.on == false`: writes RGB(0,0,0) to all pixels
@@ -177,7 +179,7 @@ Configures and registers everything before the stack starts:
 Called by ZBOSS whenever a network event occurs. This function is **not static** — it is a weak symbol defined in the SDK that the application overrides.
 
 | Signal | Meaning | Action taken |
-|--------|---------|-------------|
+| ------ | ------- | ------------ |
 | `SKIP_STARTUP` | Stack ready | Start BDB initialization |
 | `DEVICE_FIRST_START` | Factory-new, no stored network | Start network steering (scan + join) |
 | `DEVICE_REBOOT` | Known network found in flash | Restore ZCL attributes → drive LEDs |
@@ -205,7 +207,7 @@ Processes incoming ZCL attribute writes from the coordinator/controller.
 Updates `s_nl_state` and calls `apply_state()` for each recognised attribute:
 
 | Cluster | Attribute | Field updated |
-|---------|-----------|--------------|
+| ------- | --------- | ------------- |
 | On/Off (0x0006) | OnOff (0x0000) | `s_nl_state.on` |
 | Level Control (0x0008) | CurrentLevel (0x0000) | `s_nl_state.level` |
 | Color Control (0x0300) | CurrentHue (0x0000) | `s_nl_state.hue` |
@@ -230,7 +232,7 @@ loaded persisted attributes from flash. This function reads them back via
 
 ## State Flow: Zigbee Command → LED Output
 
-```
+```text
 Zigbee2MQTT / Home Assistant
         │
         │  ZCL Write Attribute command
@@ -268,7 +270,7 @@ led_strip_refresh()  →  RMT peripheral clocks data to WS2812B strip
 
 ## Startup State Restore (Reboot)
 
-```
+```text
 Power on
     │
     ▼
@@ -293,7 +295,7 @@ going straight to network steering.
 
 ## Flash Layout
 
-```
+```text
 Address    Size    Name         Purpose
 ─────────────────────────────────────────────────────────────
 0x9000     20 KB   nvs          ESP-IDF NVS (Zigbee internal keys)
@@ -313,7 +315,7 @@ Total used: ~2.63 MB. Requires 4 MB flash minimum.
 **`sdkconfig.defaults`** — values applied on first `idf.py build` (or after `rm sdkconfig`):
 
 | Key | Value | Effect |
-|-----|-------|--------|
+| ----- | ------- | -------- |
 | `CONFIG_ZB_ENABLED` | y | Enables Zigbee stack |
 | `CONFIG_ZB_ZED` | y | Selects End Device library (`libesp_zb_api.ed.a`) |
 | `CONFIG_ESPTOOLPY_FLASHSIZE_4MB` | y | Matches physical flash size |
@@ -330,7 +332,7 @@ Total used: ~2.63 MB. Requires 4 MB flash minimum.
 ## Key Constants
 
 | Constant | File | Value | Meaning |
-|----------|------|-------|---------|
+| ---------- | ------ | ------- | --------- |
 | `LED_STRIP_GPIO` | `led_strip_control.h:6` | 8 | Data pin for WS2812B |
 | `LED_STRIP_LED_COUNT` | `led_strip_control.h:7` | 30 | Number of LEDs in the strip |
 | `HA_ENDPOINT` | `zigbee_light.h:6` | 1 | Zigbee endpoint number |
