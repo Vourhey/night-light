@@ -72,6 +72,23 @@ static void apply_state_from_zcl(void)
         s_nl_state.saturation = *(uint8_t *)attr->data_p;
     }
 
+    /* Apply StartUpOnOff behaviour:
+     *   0x00 = always off
+     *   0x01 = always on
+     *   0x02 = toggle last state
+     *   0xFF = restore last state (default) */
+    attr = esp_zb_zcl_get_attribute(HA_ENDPOINT,
+                                    ESP_ZB_ZCL_CLUSTER_ID_ON_OFF,
+                                    ESP_ZB_ZCL_CLUSTER_SERVER_ROLE,
+                                    ESP_ZB_ZCL_ATTR_ON_OFF_START_UP_ON_OFF);
+    if (attr && attr->data_p) {
+        uint8_t startup = *(uint8_t *)attr->data_p;
+        if      (startup == 0x00) s_nl_state.on = false;
+        else if (startup == 0x01) s_nl_state.on = true;
+        else if (startup == 0x02) s_nl_state.on = !s_nl_state.on;
+        /* 0xFF: keep restored value as-is */
+    }
+
     ESP_LOGI(TAG, "Restored state: on=%d level=%d hue=%d sat=%d",
              s_nl_state.on, s_nl_state.level,
              s_nl_state.hue, s_nl_state.saturation);
@@ -264,6 +281,15 @@ static void zb_stack_init(void)
         ESP_ZB_ZCL_ATTR_BASIC_MANUFACTURER_NAME_ID, manufacturer);
     esp_zb_basic_cluster_add_attr(basic_cluster,
         ESP_ZB_ZCL_ATTR_BASIC_MODEL_IDENTIFIER_ID, model_id);
+
+    /* ---- Add StartUpOnOff to On/Off cluster ----
+     * 0xFF = restore previous state (ZCL default).
+     * Z2M exposes this as power_on_behavior. */
+    static uint8_t startup_on_off = 0xFF;
+    esp_zb_attribute_list_t *on_off_cluster = esp_zb_cluster_list_get_cluster(
+        cluster_list, ESP_ZB_ZCL_CLUSTER_ID_ON_OFF, ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
+    esp_zb_on_off_cluster_add_attr(on_off_cluster,
+        ESP_ZB_ZCL_ATTR_ON_OFF_START_UP_ON_OFF, &startup_on_off);
 
     /* ---- Endpoint config ---- */
     esp_zb_endpoint_config_t ep_cfg = {
